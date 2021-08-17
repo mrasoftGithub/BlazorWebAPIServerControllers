@@ -1,0 +1,81 @@
+﻿@page "/berekeningPagina"
+@inject HttpClient httpClient
+@using ErrorHandling.Shared
+
+
+<h3>Berekening</h3>
+<EditForm Model="@berekening" OnValidSubmit="Bereken">
+    <DataAnnotationsValidator />
+    <div class="form-group row">
+        <div class="col-sm-2">
+            <label for="omschrijving" class="col=sm-2 col-form-label">Teller</label>
+        </div>
+        <div class="col-sm-10">
+            <InputNumber id="omschrijving" @bind-Value="berekening.Teller" class="form-control" placeholder="Teller" />
+            <ValidationMessage For="@(() => berekening.Teller)" />
+        </div>
+    </div>
+    <div class="form-group row">
+        <div class="col-sm-2">
+            <label asp-for="regio" class="col=sm-2 col-form-label">Noemer</label>
+        </div>
+        <div class="col-sm-10">
+            <InputNumber id="regio" @bind-Value="berekening.Noemer" class="form-control" placeholder="Noemer" />
+            <ValidationMessage For="@(() => berekening.Noemer)" />
+        </div>
+    </div>
+    <div class="form-group row">
+        <div class="col-sm-2">
+            <label asp-for="regio" class="col=sm-2 col-form-label">Uitkomst</label>
+        </div>
+        <div class="col-sm-10">
+            <InputNumber id="regio" @bind-Value="berekening.Uitkomst" class="form-control" placeholder="Uitkomst" />
+            <ValidationMessage For="@(() => berekening.Uitkomst)" />
+        </div>
+    </div>
+
+    <div>
+        <ValidationSummary />
+    </div>
+    <div>
+        <button type="submit" class="btn btn-primary">Bereken</button>&nbsp;
+    </div>
+</EditForm>
+
+<br />
+<div>@foutSummary</div>
+
+@code {
+
+    Berekening berekening = new Berekening();
+    Fout fout = new Fout();
+    string foutSummary = "";
+
+    async void Bereken()
+    {
+        var response = await httpClient.PostAsJsonAsync($"/api/Berekening/DoeBerekening", berekening);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            // Console.WriteLine($"Er is iets fout gegaan: {response.ReasonPhrase}");
+            // throw new ApplicationException($"Er is iets fout gegaan:{response.ReasonPhrase}");
+            fout = await response.Content.ReadFromJsonAsync<Fout>();
+            Console.WriteLine($"\n{fout.Title}");
+            Console.WriteLine($"Fout.Status: {fout.Status}");
+            Console.WriteLine($"Http Status Code: {response.ReasonPhrase}");
+            Console.WriteLine($"Fout.Detail: {fout.Detail}");
+            Console.WriteLine($"Fout.Type: {fout.Type}");
+            Console.WriteLine($"Fout.TraceId: {fout.TraceId}\n");
+            foutSummary = $"{fout.Detail}";
+        }
+        else
+        {
+            // Werk bij met het object dat is geretourneerd
+            berekening = await response.Content.ReadFromJsonAsync<Berekening>();
+            foutSummary = "";
+        }
+
+        // UI Refresh manually by re-rendering:
+        StateHasChanged();
+    }
+}
